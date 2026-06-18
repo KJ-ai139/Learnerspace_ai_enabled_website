@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Week1 assignment</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h1>LOGIN PAGE</h1>
+    <form>
+      <label>Email ID : </label>
+      <input type = "text" id = "email"><br><br>
+      <label>Password : </label>
+      <input type = "password" id = "pass"><br><br>
+      <input type = "button" id = "submit" onclick = "validate()" value = "SUBMIT"><br>
+    </form>
+    <br>
+    <div id="div"></div>
+    <div id="div1"></div>
+    <br><a href = "https://theuselessweb.com/">forgot password?</a>
+    <script>
+      function validate(){
+        document.getElementById("div").innerHTML = "";
+        document.getElementById("div1").innerHTML = "";
+        let email = document.getElementById("email").value;
+        let pass = document.getElementById("pass").value;
+        const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if(!email.match(pattern)){
+          document.getElementById("div").innerHTML = "Error: Invalid email address.";
+        } 
+        else if(pass.length<8){
+          document.getElementById("div").innerHTML = "Error: Password should be minimum 8 characters.";
+        }
+        else{
+          document.getElementById("div1").innerHTML = "Welcome!";
+        }
+      }
+    </script>
+  </body>
+</html>
