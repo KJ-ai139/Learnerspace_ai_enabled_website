@@ -1,0 +1,247 @@
+<html>
+    <head>
+        <title>Week2 Assignment</title>
+        <link rel="stylesheet" href="style.css" />
+
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    </head>
+    <body>
+        <h1>Everyday Task Manager is here!</h1>
+
+        <div id="tasklist"></div>
+        
+        <div id="temp"></div>
+        
+        <div class="button-container">
+            <button id="add" onclick="addnew()">+ ADD TASK</button>
+        
+        </div>
+        <div class="ai">
+            <button id="gem" onclick="callAI()">+ PLAN USING AI</button>
+        </div>
+        
+        <script>
+            //To show notifications on the top of the page.
+            function showNotification(message, type) {
+                const notif = document.createElement("div");
+                notif.innerText = message;
+                notif.className = `notification ${type}`; 
+                document.body.prepend(notif);
+                
+                // Remove the notification after 3 seconds
+                setTimeout(() => {
+                    notif.remove();
+                }, 3000);
+            }
+
+            //onclick function for the add new task button
+            function addnew() {
+                //adding input box in the temporary div block
+                const container = document.getElementById("temp");
+
+                //to prevent multiple instances of add new task
+                if (container.querySelector(".input-group")) {
+                    showNotification("Please save or cancel your current task first.", "error");
+                    return;
+                }
+
+                //structure of the input frontend
+                const inputGroup = document.createElement("div");
+                inputGroup.className = "input-group";
+                const taskInput = document.createElement("input");
+                taskInput.type = "text";
+                taskInput.placeholder = "Enter your task here...";
+                taskInput.className = "task-input-field";
+
+                const saveButton = document.createElement("button");
+                saveButton.innerText = "Save";
+                saveButton.className = "save-btn";
+                saveButton.onclick = function() {
+                    //displaying task in the tasklist div block when a valid string is saved by user
+                    if(taskInput.value.trim() !== ""){
+                        //structure of a task in frontend
+                        const tasklist = document.getElementById("tasklist");
+                        const taskGroup = document.createElement("div");
+                        taskGroup.className = "task-group";
+                        const taskText = document.createElement("p"); 
+                        taskText.innerText = taskInput.value;
+                        taskText.className = "task";
+                        //update button to update task and delete button to delete
+                        const updateButton = document.createElement("button");
+                        updateButton.innerText = "Update";
+                        updateButton.className = "updt";
+                        const delButton = document.createElement("button");
+                        delButton.innerHTML = "Delete";
+                        delButton.className = "del";
+
+                        delButton.onclick = function() {
+                            taskGroup.remove();
+                            showNotification("Task deleted.", "success");
+                        };
+
+                        updateButton.onclick = function() {
+                            //to prevent multiple instances
+                            if(taskGroup.querySelector(".edit-wrapper")){
+                                return; 
+                            }
+                            //structure of input frontend for updating
+                            const editWrapper = document.createElement("div");
+                            editWrapper.className = "edit-wrapper";
+                            const editInput = document.createElement("input");
+                            editInput.type = "text";
+                            editInput.value = taskText.innerText;
+                            editInput.className = "task-input-field";
+                            const confirmButton = document.createElement("button");
+                            confirmButton.innerText = "Confirm";
+                            confirmButton.className = "save-btn";
+
+                            confirmButton.onclick = function() {
+                                if (editInput.value.trim() !== "") {
+                                    taskText.innerText = editInput.value; 
+                                    editWrapper.remove();    
+                                    showNotification("Task updated successfully!", "success");        
+                                } else {
+                                    showNotification("Task description cannot be empty!", "error");
+                                }
+                            };
+                            editWrapper.appendChild(editInput);
+                            editWrapper.appendChild(confirmButton);
+                            taskGroup.appendChild(editWrapper);            
+                            editInput.focus();
+                        };
+
+                        taskGroup.appendChild(taskText);
+                        taskGroup.appendChild(updateButton);
+                        taskGroup.appendChild(delButton);
+                        tasklist.appendChild(taskGroup);
+                        inputGroup.remove();
+                        
+                        showNotification("Task added successfully!", "success");
+                    } 
+                    else{
+                    showNotification("Task cannot be an empty string.", "error");
+                    }
+                };
+                inputGroup.appendChild(taskInput);
+                inputGroup.appendChild(saveButton);
+                container.appendChild(inputGroup);
+                taskInput.focus();
+            }
+
+            //onclick function for plan using ai button
+            function callAI() {
+                //taking user input to prompt the ai model in the temp div block
+                const container = document.getElementById("temp");
+
+                //prevent multiple instances
+                if (container.querySelector(".input-group")) {
+                    showNotification("Please save or cancel your current task first.", "error");
+                    return;
+                }
+
+                //frontend structure for input 
+                const inputGroup = document.createElement("div");
+                inputGroup.className = "input-group";
+                const taskInput = document.createElement("input");
+                taskInput.type = "text";
+                taskInput.placeholder = "Enter your prompt here...";
+                taskInput.className = "task-input-field";
+                const saveButton = document.createElement("button");
+                saveButton.innerText = "Generate Tasklist";
+                saveButton.className = "save-btn";
+            
+                saveButton.onclick = async function() {
+                    //the prompt taken from user
+                    const goal = taskInput.value.trim();
+                    if(goal === "") {
+                        showNotification("Please enter a goal.", "error");
+                        return;
+                    }
+                    //AI takes time to respond. so this text tells the user that their input is being processed
+                    saveButton.disabled = true;
+                    saveButton.innerText = "Generating..."
+
+                    //fetch the ai response via requesting a local server of node.js
+                    const response = await fetch("http://localhost:3000/generate", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" }, //to get json output
+                        body: JSON.stringify({ goal: goal })
+                    });
+                    
+                    //prompt the user if ai response wasn't received for some reason.
+                    if (!response.ok) {
+                        showNotification("The AI is currently busy. Please try again in a moment.", "error");
+                        return;
+                    }
+                    //the json string converted to js array
+                    const tasks = await response.json();
+
+                    //adding the tasks received from ai into the list
+                    const tasklist = document.getElementById("tasklist");
+                    tasks.forEach(task => {
+                        const taskGroup = document.createElement("div");
+                        taskGroup.className = "task-group";
+                        const taskText = document.createElement("p"); 
+                        taskText.innerText = task.task_name + " (Expected duration: " + task.estimated_time + " Priority: " + task.priority + ")" ;
+                        taskText.className = "task";
+
+                        //keeping the frontend same for ai generated tasks too
+                        const updateButton = document.createElement("button");
+                        updateButton.innerText = "Update";
+                        updateButton.className = "updt";
+                        const delButton = document.createElement("button");
+                        delButton.innerHTML = "Delete";
+                        delButton.className = "del";
+
+                        delButton.onclick = function() {
+                            taskGroup.remove();
+                            showNotification("Task deleted.", "success");
+                        };
+
+                        updateButton.onclick = function() {
+                            if(taskGroup.querySelector(".edit-wrapper")){
+                                return; 
+                            }
+                            const editWrapper = document.createElement("div");
+                            editWrapper.className = "edit-wrapper";
+                            const editInput = document.createElement("input");
+                            editInput.type = "text";
+                            editInput.value = taskText.innerText;
+                            editInput.className = "task-input-field";
+                            const confirmButton = document.createElement("button");
+                            confirmButton.innerText = "Confirm";
+                            confirmButton.className = "save-btn";
+
+                            confirmButton.onclick = function() {
+                                if (editInput.value.trim() !== "") {
+                                    taskText.innerText = editInput.value; 
+                                    editWrapper.remove();    
+                                    showNotification("Task updated successfully!", "success");        
+                                } else {
+                                    showNotification("Task description cannot be empty!", "error");
+                                }
+                            };
+
+                            editWrapper.appendChild(editInput);
+                            editWrapper.appendChild(confirmButton);
+                            taskGroup.appendChild(editWrapper);            
+                            editInput.focus();
+                        };
+                        taskGroup.appendChild(taskText);
+                        taskGroup.appendChild(updateButton);
+                        taskGroup.appendChild(delButton);
+                        tasklist.appendChild(taskGroup);
+                    });                    
+                    inputGroup.remove();
+                    showNotification("Your plan is ready!", "success");
+                }
+                inputGroup.appendChild(taskInput);
+                inputGroup.appendChild(saveButton);
+                container.appendChild(inputGroup);
+                taskInput.focus();
+            }
+        </script>
+    </body>
+</html>
